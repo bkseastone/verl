@@ -2,7 +2,7 @@
 _target_: verl.workers.config.RolloutConfig
 
 # actor_rollout_ref.rollout.name: hf/vllm/sglang/trtllm. The default value will be removed in the future
-name: ???
+name: vllm
 
 # sync: LLM, async: AsyncLLM
 mode: async
@@ -53,14 +53,12 @@ cudagraph_capture_sizes: null
 free_cache_engine: True
 
 # TP size for rollout. Not effective for hf
-tensor_model_parallel_size: 2
+tensor_model_parallel_size: 1
 
 # DP size for rollout
 data_parallel_size: 1
 
 # EP size for rollout
-# For MoE models in vllm, EP=1 refers to ETP parallel in fused_moe with TP*DP weight splits,
-# EP>1 (should satisfy EP=TP*DP) refers to EP parallel in fused_moe
 expert_parallel_size: 1
 
 # PP size for rollout.
@@ -95,7 +93,7 @@ load_format: dummy
 log_prob_micro_batch_size: null
 
 # The batch size for one forward pass in the computation of log_prob. Local batch size per GPU.
-log_prob_micro_batch_size_per_gpu: null
+log_prob_micro_batch_size_per_gpu: 1
 
 # enable dynamic batch size (sequence packing) for log_prob computation
 # same as actor_rollout_ref.actor.use_dynamic_bsz if it exists, otherwise false
@@ -401,5 +399,5 @@ quantization_config_file: null
 # MTP configuration, reuse model configuration
 mtp: ${oc.select:actor_rollout_ref.model.mtp, null}
 
-# QAT configuration (inherited from actor's engine config)
-qat: ${oc.select:actor_rollout_ref.actor.fsdp_config.qat,null}
+# QAT configuration (inherited from actor.qat)
+qat: ${oc.select:actor_rollout_ref.actor.qat,null}

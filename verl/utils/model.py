@@ -21,6 +21,7 @@ import re
 import warnings
 from dataclasses import dataclass
 from typing import Optional
+from packaging.version import parse as parse_version
 
 import numpy as np
 import torch
@@ -30,6 +31,7 @@ from transformers import (
     AutoConfig,
     AutoModel,
     AutoModelForCausalLM,
+    AutoModelForImageTextToText,
     AutoModelForSequenceClassification,
     AutoModelForTokenClassification,
     GenerationConfig,
@@ -37,17 +39,6 @@ from transformers import (
     PretrainedConfig,
     PreTrainedModel,
 )
-
-try:
-    from transformers import AutoModelForVision2Seq
-except ImportError:
-    AutoModelForVision2Seq = None
-
-try:
-    from transformers import AutoModelForImageTextToText
-except ImportError:
-    AutoModelForImageTextToText = AutoModelForVision2Seq
-
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from verl.models.registry import ModelRegistry
@@ -604,7 +595,11 @@ def patch_valuehead_model(model) -> None:
     from types import MethodType
 
     from transformers import PreTrainedModel
-    from trl import AutoModelForCausalLMWithValueHead
+    import trl
+    if parse_version(trl.__version__) >= parse_version("0.27.0"):
+        from trl.experimental.ppo import AutoModelForCausalLMWithValueHead
+    else:
+        from trl import AutoModelForCausalLMWithValueHead
 
     def tie_weights(self: "AutoModelForCausalLMWithValueHead") -> None:
         if isinstance(self.pretrained_model, PreTrainedModel):
@@ -650,7 +645,11 @@ def load_valuehead_model(local_path, torch_dtype, model_config, trust_remote_cod
 
     assert is_trl_available()
 
-    from trl import AutoModelForCausalLMWithValueHead
+    import trl
+    if parse_version(trl.__version__) >= parse_version("0.27.0"):
+        from trl.experimental.ppo import AutoModelForCausalLMWithValueHead
+    else:
+        from trl import AutoModelForCausalLMWithValueHead
 
     if type(model_config) in AutoModelForVision2Seq._model_mapping.keys():
         module_class = AutoModelForVision2Seq

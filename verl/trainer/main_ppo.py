@@ -55,6 +55,7 @@ def run_ppo(config, task_runner_class=None) -> None:
                 model paths, and training hyperparameters.
         task_runner_class: For recipe to change TaskRunner.
     """
+    print("ray.is_initialized()? ", ray.is_initialized())
     # Check if Ray is not initialized
     if not ray.is_initialized():
         # Initialize Ray with a local cluster configuration
@@ -70,11 +71,19 @@ def run_ppo(config, task_runner_class=None) -> None:
             runtime_env_vars = runtime_env_kwargs.get("env_vars", {})
             runtime_env_vars["TRANSFER_QUEUE_ENABLE"] = "1"
             runtime_env_kwargs["env_vars"] = runtime_env_vars
+        
+        runtime_env_vars = runtime_env_kwargs.get("env_vars", {})
+        runtime_env_vars["HYDRA_FULL_ERROR"] = "1"
+        runtime_env_vars["no_proxy"] = "127.0.0.1,localhost,local,.local,172.0.0.0/24,10.0.0.0/24,.baidu.com,.baidu-int.com,.cn"
+        runtime_env_vars["https_proxy"] = "http://agent.baidu.com:8188"
+        runtime_env_vars["http_proxy"] = "http://agent.baidu.com:8188"
+        runtime_env_kwargs["env_vars"] = runtime_env_vars
 
         runtime_env = OmegaConf.merge(default_runtime_env, runtime_env_kwargs)
         ray_init_kwargs = OmegaConf.create({**ray_init_kwargs, "runtime_env": runtime_env})
-        print(f"ray init kwargs: {ray_init_kwargs}")
+        print(f"ray init kwargs: {ray_init_kwargs}\nruntime_env: {runtime_env}")
         ray.init(**OmegaConf.to_container(ray_init_kwargs))
+        print("ray.inited? ", ray.is_initialized())
 
     if task_runner_class is None:
         task_runner_class = ray.remote(num_cpus=1)(TaskRunner)  # please make sure main_task is not scheduled on head

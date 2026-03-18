@@ -18,6 +18,7 @@ Apply monkey-patch function to models
 import sys
 from types import SimpleNamespace
 from typing import Optional
+from packaging.version import parse as parse_version
 
 import torch
 from transformers.modeling_flash_attention_utils import _flash_attention_forward
@@ -340,7 +341,11 @@ def apply_monkey_patch(
     )
 
     if is_trl_available():
-        from trl import AutoModelForCausalLMWithValueHead  # type: ignore
+        import trl
+        if parse_version(trl.__version__) >= parse_version("0.27.0"):
+            from trl.experimental.ppo import AutoModelForCausalLMWithValueHead
+        else:
+            from trl import AutoModelForCausalLMWithValueHead  # type: ignore
 
         def state_dict(self, *args, **kwargs):
             return torch.nn.Module.state_dict(self, *args, **kwargs)
