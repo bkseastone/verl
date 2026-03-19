@@ -65,6 +65,9 @@ from verl.utils.tracking import ValidationGenerationsLogger
 from verl.workers.config import FSDPEngineConfig
 from verl.workers.utils.padding import left_right_2_no_padding, no_padding_2_padding
 
+PY_SCRIPT_PATH = os.path.split(os.path.realpath(__file__))[0]
+ROOT_PATH = os.path.join(PY_SCRIPT_PATH, "../../../")
+
 
 def apply_kl_penalty(data: DataProto, kl_ctrl: core_algos.AdaptiveKLController, kl_penalty="kl"):
     """Apply KL penalty to the token-level rewards.
@@ -316,6 +319,10 @@ class RayPPOTrainer:
         # TODO: we have to make sure the batch size is divisible by the dp size
         from verl.trainer.main_ppo import create_rl_dataset, create_rl_sampler
 
+        self.config.data.train_files = os.path.join(ROOT_PATH, self.config.data.train_files)
+        self.config.data.val_files = os.path.join(ROOT_PATH, self.config.data.val_files)
+        print("[ws-debug] train_files: ", self.config.data.train_files)
+        print("[ws-debug] val_files: ", self.config.data.val_files)
         if train_dataset is None:
             train_dataset = create_rl_dataset(
                 self.config.data.train_files,
@@ -765,12 +772,20 @@ class RayPPOTrainer:
         for resource_pool, class_dict in self.resource_pool_to_cls.items():
             if not class_dict:
                 continue
+            # 融合多个 Worker 类为一个 Ray Actor 类: 将各个模型的Worker类在当前进程中实例化后, 将其各个的函数封装成带前缀函数塞到同一个类中后, 包装成 Ray remote class 返回 (colocated, 共存于同一个 Ray Actor 进程中) 
             worker_dict_cls = create_colocated_worker_cls(class_dict=class_dict)
+            # 分发到各节点各 GPU 创建实例: 假设 1 node × 8 GPU，会创建 8 个 Ray Actor（WorkerDict 实例），每个绑定一个 GPU。每个 Actor 内部包含 Actor+Critic+Ref 三个子 Worker。
             wg_dict = self.ray_worker_group_cls(
                 resource_pool=resource_pool,
                 ray_cls_with_init=worker_dict_cls,
                 **wg_kwargs,
             )
+            # 将融合的 WorkerGroup 拆分成独立视图, 方法映射是指 actor_rollout_init_model → init_model
+            # {
+            #     "actor_rollout": RayWorkerGroup(指向同一批 worker, 但方法映射到 actor_rollout_xxx),
+            #     "critic":        RayWorkerGroup(指向同一批 worker, 但方法映射到 critic_xxx),
+            #     "ref":           RayWorkerGroup(指向同一批 worker, 但方法映射到 ref_xxx),
+            # }
             spawn_wg = wg_dict.spawn(prefix_set=class_dict.keys())
             all_wg.update(spawn_wg)
 
@@ -841,6 +856,7 @@ class RayPPOTrainer:
             rollout_resource_pool=actor_rollout_resource_pool,
             reward_loop_worker_handles=reward_loop_worker_handles,
         )
+
         checkpoint_engine_config = omega_conf_to_dataclass(self.config.actor_rollout_ref.rollout.checkpoint_engine)
         self.checkpoint_manager = CheckpointEngineManager(
             config=checkpoint_engine_config,

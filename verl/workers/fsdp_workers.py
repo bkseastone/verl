@@ -149,6 +149,7 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
     def __init__(self, config: DictConfig, role: str, **kwargs):
         Worker.__init__(self)
 
+        # 这里的config不是全局的config, 已通过RayPPOTrainer.init_workers(), 将其绑定到了config.actor_rollout_ref
         self.config = config
         import torch.distributed
 
@@ -878,6 +879,7 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
                 optim_config = None
                 fsdp_config = FSDPEngineConfig()
 
+            # 下载模型
             local_path = copy_to_local(self.config.model.path, use_shm=use_shm)
             # TiledMLP configuration for memory-efficient MLP computation
             tiled_mlp_config = self.config.model.get("tiled_mlp", {})
