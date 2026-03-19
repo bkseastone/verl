@@ -1,0 +1,19 @@
+# 个人开发方案
+
+开发前提（假设正在开发feature/ws_comment_0318分支）：
+ - 开发的 feature/ws_comment_0318 分支与 main_patched 分支无diff
+ - 即新拉分支需要基于 main_patched 分支拉
+
+开发流程：
+ - 在 feature/ws_comment_0318 分支开发
+ - 开发完后同步远程分支： git commit -m "xxxx" && git pc
+
+同步官方主干改动：
+ - 手动在平台操作提PR，将 feature/ws_comment_0318 分支合并到 main_patched 分支
+ - main 分支同步官方改动，并手动在平台操作提PR，将 main 分支合并到 main_patched 分支
+ - 对比diff确认同步官方主干改动时没有将我们自己的改动覆盖掉： https://github.com/bkseastone/verl/compare/main_patched...bkseastone:verl:feature/ws_comment_0318?expand=1
+ - 确认无误后手动在平台操作提PR，将 main_patched 分支合并到 feature/ws_comment_0318 分支，继续分支开发，或者删掉分支结束该feature的开发
+
+# 多人开发方案
+
+TBD
