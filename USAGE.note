@@ -6,7 +6,7 @@
 
 开发流程：
  - 在 feature/ws_comment_0318 分支开发
- - 开发完后同步远程分支： git commit -m "xxxx" && git pc
+ - 开发完后同步远程分支： git commit -m "xxxx" && git ggpush
 
 同步官方主干改动：
  - 手动在平台操作提PR，将 feature/ws_comment_0318 分支合并到 main_patched 分支
