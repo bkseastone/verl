@@ -32,7 +32,7 @@ model:
   _target_: verl.workers.config.FSDPCriticModelCfg
 
   # Whether to use shared memory for loading the model
-  use_shm: False
+  use_shm: True
 
   # Enable gradient checkpointing to save memory
   enable_gradient_checkpointing: True

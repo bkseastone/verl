@@ -881,6 +881,8 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
 
             # 下载模型
             local_path = copy_to_local(self.config.model.path, use_shm=use_shm)
+            print("[ws-debug] self.config.model.path: ", self.config.model.path)
+            print("[ws-debug] local_path: ", local_path)
             # TiledMLP configuration for memory-efficient MLP computation
             tiled_mlp_config = self.config.model.get("tiled_mlp", {})
             use_tiled_mlp = tiled_mlp_config.get("enabled", False)
