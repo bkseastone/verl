@@ -35,7 +35,7 @@ data:
   custom_cls:
     path: null
     name: null
-  use_shm: False
+  use_shm: True
   apply_chat_template_kwargs: {}
   num_workers: 8
 

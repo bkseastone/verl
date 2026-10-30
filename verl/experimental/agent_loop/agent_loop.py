@@ -1009,6 +1009,7 @@ class AgentLoopManager:
             self.agent_loop_workers.append(
                 self.agent_loop_workers_class.options(
                     name=f"agent_loop_worker_{i}" + f"_{uuid4().hex[:8]}",
+                    runtime_env={"pip": []},
                     scheduling_strategy=ray.util.scheduling_strategies.NodeAffinitySchedulingStrategy(
                         node_id=node_id, soft=True
                     ),
@@ -1021,7 +1022,9 @@ class AgentLoopManager:
             )
 
     async def _init_global_load_balancer(self) -> None:
-        self.global_load_balancer = GlobalRequestLoadBalancer.remote(
+        self.global_load_balancer = GlobalRequestLoadBalancer.options(
+            runtime_env={"pip": []},
+        ).remote(
             server_actor_ids=self.server_addresses,
             max_cache_size=DEFAULT_ROUTING_CACHE_SIZE,
         )

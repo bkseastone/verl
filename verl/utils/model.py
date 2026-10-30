@@ -672,6 +672,7 @@ def load_valuehead_model(local_path, torch_dtype, model_config, trust_remote_cod
         attn_implementation="flash_attention_2",
         trust_remote_code=trust_remote_code,
     )
+    # 在 last-hidden-state 后面添加一层 value head, 与 lm head 共享 last-hidden-state
     model = AutoModelForCausalLMWithValueHead.from_pretrained(ori_model)
     patch_valuehead_model(model)
     return model

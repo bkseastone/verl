@@ -378,8 +378,6 @@ class vLLMHttpServer:
         if self.nnodes > 1:
             args.update(
                 {
-                    "master_addr": self._master_address,
-                    "master_port": self._master_port,
                     "node_rank": self.node_rank,
                     "nnodes": self.nnodes,
                     "data_parallel_address": self._master_address,
@@ -431,9 +429,9 @@ class vLLMHttpServer:
 
         # 3. launch server
         if self.node_rank == 0:
-            self._master_sock.close()
-            self._dp_rpc_sock.close()
-            self._dp_master_sock.close()
+            # Sockets are closed inside run_server() just before engine creation,
+            # to keep ports reserved as long as possible and avoid races
+            # when multiple vLLM instances allocate ports on the same node.
             await self.run_server(server_args)
         else:
             # TODO: avoid connect before master_sock close
@@ -453,7 +451,29 @@ class vLLMHttpServer:
         if "disable_log_stats" in fn_args:
             kwargs["disable_log_stats"] = engine_args.disable_log_stats
 
-        engine_client = AsyncLLM.from_vllm_config(vllm_config=vllm_config, usage_context=usage_context, **kwargs)
+        # Release reserved sockets just before engine creation, then set
+        # VLLM_PORT so the multiproc_executor's get_open_port() uses our
+        # pre-allocated port instead of picking a random one that may
+        # collide with other vLLM instances on the same node.
+        if hasattr(self, '_master_sock') and self._master_sock is not None:
+            self._master_sock.close()
+        if hasattr(self, '_dp_rpc_sock') and self._dp_rpc_sock is not None:
+            self._dp_rpc_sock.close()
+        if hasattr(self, '_dp_master_sock') and self._dp_master_sock is not None:
+            self._dp_master_sock.close()
+
+        old_vllm_port = os.environ.get("VLLM_PORT")
+        if self._master_port is not None:
+            os.environ["VLLM_PORT"] = str(self._master_port)
+
+        try:
+            engine_client = AsyncLLM.from_vllm_config(vllm_config=vllm_config, usage_context=usage_context, **kwargs)
+        finally:
+            # Restore original VLLM_PORT to avoid affecting other code
+            if old_vllm_port is None:
+                os.environ.pop("VLLM_PORT", None)
+            else:
+                os.environ["VLLM_PORT"] = old_vllm_port
 
         # Don't keep the dummy data in memory
         await engine_client.reset_mm_cache()

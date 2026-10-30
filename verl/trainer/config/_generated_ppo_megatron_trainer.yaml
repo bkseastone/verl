@@ -337,7 +337,7 @@ actor_rollout_ref:
     path: Qwen/Qwen2.5-0.5B-Instruct
     hf_config_path: null
     tokenizer_path: null
-    use_shm: false
+    use_shm: True
     trust_remote_code: false
     custom_chat_template: null
     external_lib: null
@@ -398,7 +398,7 @@ actor_rollout_ref:
   nccl_timeout: 600
 data:
   tokenizer: null
-  use_shm: false
+  use_shm: True
   train_files: ~/data/rlhf/gsm8k/train.parquet
   val_files: ~/data/rlhf/gsm8k/test.parquet
   train_max_samples: -1

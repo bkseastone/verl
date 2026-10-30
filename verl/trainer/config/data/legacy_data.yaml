@@ -2,7 +2,7 @@
 tokenizer: null
 
 # Whether to use shared memory for data loading.
-use_shm: False
+use_shm: True
 
 # Training set parquet. Can be a list or a single file.
 # The program will read all files into memory, so it can't be too large (< 100GB).

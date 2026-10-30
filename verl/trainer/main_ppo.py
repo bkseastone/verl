@@ -72,18 +72,23 @@ def run_ppo(config, task_runner_class=None) -> None:
             runtime_env_vars["TRANSFER_QUEUE_ENABLE"] = "1"
             runtime_env_kwargs["env_vars"] = runtime_env_vars
         
-        runtime_env_vars = runtime_env_kwargs.get("env_vars", {})
-        runtime_env_vars["HYDRA_FULL_ERROR"] = "1"
-        runtime_env_vars["no_proxy"] = "127.0.0.1,localhost,local,.local,172.0.0.0/24,10.0.0.0/24,.baidu.com,.baidu-int.com,.cn"
-        runtime_env_vars["https_proxy"] = "http://agent.baidu.com:8188"
-        runtime_env_vars["http_proxy"] = "http://agent.baidu.com:8188"
-        runtime_env_kwargs["env_vars"] = runtime_env_vars
+        # runtime_env_vars = runtime_env_kwargs.get("env_vars", {})
+        # runtime_env_vars["HYDRA_FULL_ERROR"] = "1"
+        # runtime_env_vars["no_proxy"] = "127.0.0.1,localhost,local,.local,172.0.0.0/24,10.0.0.0/24,.baidu.com,.baidu-int.com,.cn"
+        # runtime_env_vars["https_proxy"] = "http://agent.baidu.com:8188"
+        # runtime_env_vars["http_proxy"] = "http://agent.baidu.com:8188"
+        # runtime_env_kwargs["env_vars"] = runtime_env_vars
 
         runtime_env = OmegaConf.merge(default_runtime_env, runtime_env_kwargs)
         ray_init_kwargs = OmegaConf.create({**ray_init_kwargs, "runtime_env": runtime_env})
         print(f"ray init kwargs: {ray_init_kwargs}\nruntime_env: {runtime_env}")
         ray.init(**OmegaConf.to_container(ray_init_kwargs))
         print("ray.inited? ", ray.is_initialized())
+    
+    import sys
+    import torch
+    print("torch.__version__: ", torch.__version__)
+    print("python.__version__: ", sys.version)
 
     if task_runner_class is None:
         task_runner_class = ray.remote(num_cpus=1)(TaskRunner)  # please make sure main_task is not scheduled on head
@@ -314,7 +319,7 @@ class TaskRunner:
         # Download the checkpoint from HDFS to the local machine.
         # `use_shm` determines whether to use shared memory, which could lead to faster model loading if turned on
         local_path = copy_to_local(
-            config.actor_rollout_ref.model.path, use_shm=config.actor_rollout_ref.model.get("use_shm", False)
+            config.actor_rollout_ref.model.path, use_shm=config.actor_rollout_ref.model.get("use_shm", True)
         )
 
         # Instantiate the tokenizer and processor.
